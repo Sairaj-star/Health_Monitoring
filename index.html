@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IoT Multi-Parameter Health Monitoring &amp; Alert System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Top Navigation -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <div class="brand">
+        <span class="pulse-dot" id="liveDot"></span>
+        <span>HealthPulse IoT</span>
+      </div>
+      <div class="nav-links">
+        <a href="#dashboard">Live Vitals</a>
+        <a href="#charts">Trend Graphs</a>
+        <a href="#logs">Telemetry Log</a>
+        <a href="#architecture">System Info</a>
+        <button type="button" class="btn-outline" id="toggleSettingsBtn">Channel Settings</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- Hero Header -->
+    <header class="hero">
+      <div>
+        <span class="eyebrow">B.Tech Final Year Mini-Project &bull; EXTC Engineering</span>
+        <h1>IoT Based Multi-Parameter Health Monitoring &amp; Alert System</h1>
+        <p class="subtitle">
+          Real-time patient telemetry powered by ESP32 microcontroller sensors and ThingSpeak Cloud (Channel #3579817).
+        </p>
+      </div>
+      <div class="status-cluster">
+        <div class="status-pill" id="channelStatus">Channel #3579817</div>
+        <div class="status-pill" id="syncStatus">Connecting...</div>
+        <button type="button" class="btn-primary" id="refreshBtn">Refresh Now</button>
+      </div>
+    </header>
+
+    <!-- Collapsible Channel / API Key Panel -->
+    <section class="settings-panel" id="settingsPanel" hidden>
+      <div class="settings-header">
+        <h2>ThingSpeak Connection Settings</h2>
+        <p>Pre-configured for Channel <strong>3579817</strong>. Add your Read API Key below if your channel is set to Private.</p>
+      </div>
+      <form id="configForm" class="settings-grid">
+        <div class="field-group">
+          <label for="channelIdInput">Channel ID</label>
+          <input type="text" id="channelIdInput" value="3579817" required />
+        </div>
+        <div class="field-group">
+          <label for="apiKeyInput">Read API Key (Optional if Public)</label>
+          <input type="text" id="apiKeyInput" placeholder="Paste Read API Key if channel is Private" />
+        </div>
+        <div class="field-group">
+          <label for="intervalSelect">Auto-Refresh Interval</label>
+          <select id="intervalSelect">
+            <option value="15000" selected>Every 15 Seconds (Recommended)</option>
+            <option value="30000">Every 30 Seconds</option>
+            <option value="60000">Every 1 Minute</option>
+          </select>
+        </div>
+        <div class="settings-actions">
+          <button type="submit" class="btn-primary">Save &amp; Apply</button>
+          <button type="button" class="btn-outline" id="resetDefaultBtn">Reset Default</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Critical Threshold Alert Banner -->
+    <div class="alert-banner" id="alertBanner" role="alert"></div>
+
+    <!-- 4-Parameter Live Bento Grid -->
+    <section id="dashboard" class="bento-grid">
+      <!-- Field 1: Heart Rate -->
+      <article class="card">
+        <div class="card-top">
+          <span class="metric-title">Field 1 &bull; Heart Rate</span>
+          <span class="badge badge-wait" id="hrBadge">Waiting</span>
+        </div>
+        <div class="metric-reading">
+          <span class="metric-val" id="hrVal">--</span>
+          <span class="metric-unit">BPM</span>
+        </div>
+        <p class="metric-meta">Normal Clinical Range: 60 &ndash; 100 BPM</p>
+      </article>
+
+      <!-- Field 2: SpO2 -->
+      <article class="card">
+        <div class="card-top">
+          <span class="metric-title">Field 2 &bull; Blood Oxygen (SpO2)</span>
+          <span class="badge badge-wait" id="spo2Badge">Waiting</span>
+        </div>
+        <div class="metric-reading">
+          <span class="metric-val" id="spo2Val">--</span>
+          <span class="metric-unit">%</span>
+        </div>
+        <p class="metric-meta">Normal Clinical Range: 95% &ndash; 100%</p>
+      </article>
+
+      <!-- Field 3: ECG -->
+      <article class="card">
+        <div class="card-top">
+          <span class="metric-title">Field 3 &bull; ECG Signal</span>
+          <span class="badge badge-wait" id="ecgBadge">Waiting</span>
+        </div>
+        <div class="metric-reading">
+          <span class="metric-val" id="ecgVal">--</span>
+          <span class="metric-unit">mV / ADC</span>
+        </div>
+        <p class="metric-meta">AD8232 Cardiac Rhythm Telemetry</p>
+      </article>
+
+      <!-- Field 4: Temperature -->
+      <article class="card">
+        <div class="card-top">
+          <span class="metric-title">Field 4 &bull; Body Temperature</span>
+          <span class="badge badge-wait" id="tempBadge">Waiting</span>
+        </div>
+        <div class="metric-reading">
+          <span class="metric-val" id="tempVal">--</span>
+          <span class="metric-unit">&deg;C</span>
+        </div>
+        <p class="metric-meta">Normal Clinical Range: 36.1 &deg;C &ndash; 37.8 &deg;C</p>
+      </article>
+    </section>
+
+    <!-- Live ThingSpeak Charts (4 Fields) -->
+    <section id="charts" class="section-block">
+      <div class="section-header">
+        <h2>Real-Time ThingSpeak Trend Graphs</h2>
+        <p>Live waveform &amp; sensor history streamed directly from Channel 3579817</p>
+      </div>
+      <div class="charts-grid" id="chartsGrid"></div>
+    </section>
+
+    <!-- Recent Telemetry Table -->
+    <section id="logs" class="table-card">
+      <div class="section-header">
+        <h2>Recent Telemetry Log (Last 10 Entries)</h2>
+        <p>Auto-synced every 15 seconds</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Entry #</th>
+              <th>Timestamp</th>
+              <th>Heart Rate (BPM)</th>
+              <th>SpO2 (%)</th>
+              <th>ECG</th>
+              <th>Temperature (&deg;C)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <tr><td colspan="7">Fetching readings from ThingSpeak Channel 3579817...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Project Architecture & Team Section -->
+    <section id="architecture" class="info-grid">
+      <div class="card">
+        <h3>Hardware &amp; Cloud Architecture</h3>
+        <ul class="spec-list">
+          <li><strong>Controller:</strong> ESP32-D0WD-V3 Dual-Core Wi-Fi SoC</li>
+          <li><strong>Pulse &amp; Oximetry:</strong> MAX30102 Optical Sensor (Heart Rate &amp; SpO2)</li>
+          <li><strong>Cardiac Monitoring:</strong> AD8232 Single-Lead ECG Front-End</li>
+          <li><strong>Thermal Probe:</strong> DS18B20 / LM35 Body Temperature Sensor</li>
+          <li><strong>Local Display &amp; Cloud:</strong> 0.96&Prime; I2C OLED + ThingSpeak REST API</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Project Team &amp; Institution</h3>
+        <p class="team-intro">
+          Department of Electronics &amp; Telecommunication Engineering, Government College of Engineering, Yavatmal (DBATU).
+        </p>
+        <ul class="spec-list">
+          <li><strong>Sairaj Deshmukh</strong> &mdash; Cloud Dashboard, Firmware &amp; Integration</li>
+          <li><strong>Om Take</strong> &mdash; Sensor Interfacing &amp; Hardware Assembly</li>
+          <li><strong>Saurabh Rathod</strong> &mdash; Signal Conditioning &amp; Testing</li>
+          <li><strong>Gajanan Miskin</strong> &mdash; Power Management &amp; Documentation</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>IoT Based Multi-Parameter Health Monitoring &amp; Alert System &bull; Hosted on Render</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
